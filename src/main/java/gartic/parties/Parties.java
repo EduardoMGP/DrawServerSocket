@@ -79,7 +79,17 @@ public class Parties {
             if (party.isConnected(client)) {
                 type = Code.PARTY_ALREADY_CONNECTED;
             } else {
-                type = party.connect(client) ? Code.PARTY_CONNECTED : Code.PARTY_NOT_CONNECTED;
+
+                if (party.connect(client)) {
+                    client.send(
+                            new Response()
+                            .code(Code.PARTY_CONNECTED)
+                                    .data("chunk", party.history())
+                    );
+                    return;
+                }
+
+                type = Code.PARTY_NOT_CONNECTED;
             }
         }
 

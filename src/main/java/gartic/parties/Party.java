@@ -55,4 +55,8 @@ public class Party {
     public void disconnectAll() {
         this.clients.clear();
     }
+
+    public List<CanvasHistory> history() {
+        return history;
+    }
 }
