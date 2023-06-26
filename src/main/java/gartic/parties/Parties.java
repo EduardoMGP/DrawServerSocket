@@ -44,7 +44,7 @@ public class Parties {
         if (party != null) {
             host.send(new Response().code(Code.PARTY_LIMIT));
         } else {
-            String name = UUID.randomUUID().toString();
+            String name = UUID.randomUUID().toString().replace("-", "").substring(0, 6);
             if (parties.containsKey(name))
                 host.send(new Response().code(Code.PARTY_ERROR));
             else {
@@ -65,6 +65,10 @@ public class Parties {
                 };
                 List<CanvasHistory> canvasHistory = new Gson().fromJson(chunkString, token.getType());
                 party.drawing(canvasHistory);
+                client.send(
+                        new Response().code(Code.DRAWN)
+                                .data("peoples", party.peoples().size())
+                );
                 return;
             }
         client.send(new Response().code(Code.DRAWN_ERROR));
@@ -81,11 +85,27 @@ public class Parties {
             } else {
 
                 if (party.connect(client)) {
-                    client.send(
-                            new Response()
-                            .code(Code.PARTY_CONNECTED)
-                                    .data("chunk", party.history())
-                    );
+                    int size = party.history().size();
+                    if (size > 100) {
+                        size = size / 100;
+                        for (int i = 0; i < size; i++) {
+                            client.send(
+                                    new Response()
+                                            .code(Code.PARTY_CONNECTED)
+                                            .data("chunk", party.history().subList(i * 100, (i + 1) * 100))
+                                            .data("peoples", party.peoples().size())
+                            );
+                        }
+                    } else {
+                        client.send(
+                                new Response()
+                                        .code(Code.PARTY_CONNECTED)
+                                        .data("chunk", party.history())
+                                        .data("peoples", party.peoples().size())
+                        );
+                    }
+                    party.broadcast(new Response().code(Code.PARTY_CLIENT_JOINED)
+                            .data("peoples", party.peoples().size()), true);
                     return;
                 }
 
@@ -97,6 +117,23 @@ public class Parties {
 
     }
 
+    public static void disconnect(ClientHandler client) {
+        for (Party party : parties.values()) {
+            if (party.isConnected(client)) {
+                if (party.disconnect(client)) {
+                    client.send(
+                            new Response()
+                                    .code(Code.PARTY_DISCONNECTED)
+                                    .data("peoples", party.peoples().size())
+                    );
+                    party.broadcast(new Response().code(Code.PARTY_CLIENT_LEFT)
+                            .data("peoples", party.peoples().size()), true);
+                    return;
+                }
+            }
+        }
+    }
+
     public static void disconnect(String partyName, ClientHandler client) {
         Party party;
         Code type = Code.PARTY_CONNECT_ERROR;
@@ -106,7 +143,19 @@ public class Parties {
                 Parties.disconnectHost(client);
                 return;
             } else if (party.isConnected(client)) {
-                type = party.disconnect(client) ? Code.PARTY_DISCONNECTED : Code.PARTY_DISCONNECT_ERROR;
+
+                if (party.disconnect(client)) {
+                    client.send(
+                            new Response()
+                                    .code(Code.PARTY_DISCONNECTED)
+                                    .data("peoples", party.peoples().size())
+                    );
+                    party.broadcast(new Response().code(Code.PARTY_CLIENT_LEFT)
+                            .data("peoples", party.peoples().size()), true);
+                    return;
+                }
+
+                type = Code.PARTY_DISCONNECT_ERROR;
             } else {
                 type = Code.PARTY_DISCONNECT_ERROR;
             }
@@ -116,7 +165,16 @@ public class Parties {
     }
 
     public static void list(ClientHandler clientHandler) {
-        Gson gson = new Gson();
-        clientHandler.send(new Response().code(Code.PARTY_LIST).data("parties", gson.toJson(parties.keySet())));
+        StringBuilder json = new StringBuilder("[");
+        for (Party party : parties.values())
+            if(json.length() > 1)
+                json.append(",{\"name\":\"").append(party.name()).append("\",\"peoples\":").append(party.peoples().size()).append("}");
+            else
+                json.append("{\"name\":\"").append(party.name()).append("\",\"peoples\":").append(party.peoples().size()).append("}");
+        json.append("]");
+        clientHandler.send(
+                new Response().code(Code.PARTY_LIST)
+                        .data("parties", json)
+        );
     }
 }

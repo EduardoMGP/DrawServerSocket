@@ -13,3 +13,16 @@ dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.28'
     annotationProcessor 'org.projectlombok:lombok:1.18.28'
 }
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'gartic.ServerGartic'
+    }
+    from {
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        configurations.runtimeClasspath.collect {
+            if (!(it.isDirectory() && it.name == 'exclude'))
+                it.isDirectory() ? it : zipTree(it)
+        }
+    }
+}

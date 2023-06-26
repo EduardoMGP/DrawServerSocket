@@ -67,7 +67,9 @@ public class Response {
         PARTY_NOT_CONNECTED(false, "connect_not_connected", "You are not connected to this party"),
         PARTY_DISCONNECT_ERROR(false, "disconnect_error", "You are not connected to this party"),
         PARTY_ERROR(false, "party_error", "Party already exists"),
-        PARTY_LIMIT(false, "party_limit", "Party limit reached");
+        PARTY_LIMIT(false, "party_limit", "Party limit reached"),
+        PARTY_CLIENT_JOINED(true, "party_people_connect", "New client connected"),
+        PARTY_CLIENT_LEFT(true, "party_people_disconnect", "Client disconnected");
 
         private final String code;
         private String message;

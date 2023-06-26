@@ -16,7 +16,7 @@ public class ClientHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
 
     private static final Gson gson = new Gson();
     private static final List<Channel> clients = new LinkedList<>();
-    private Channel chann;
+    private final Channel chann;
 
     public ClientHandler(Channel chann) {
         this.chann = chann;
@@ -79,6 +79,7 @@ public class ClientHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
         clients.remove(clientChannel);
         System.out.println("Cliente desconectado: " + clientChannel.remoteAddress());
         Parties.disconnectHost(this);
+        Parties.disconnect(this);
     }
 
 }

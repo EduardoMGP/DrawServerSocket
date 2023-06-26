@@ -21,15 +21,27 @@ public class Party {
     }
 
     protected void broadcast(Response data) {
+        this.broadcast(data, false);
+    }
+
+    protected void broadcast(Response data, boolean includeHost) {
         System.out.println("Broadcasting: " + data.toString());
         for (ClientHandler client : this.clients) {
             client.send(data);
+        }
+        if (includeHost) {
+            this.host.send(data);
         }
     }
 
     protected void drawing(List<CanvasHistory> history) {
         this.history.addAll(history);
-        this.broadcast(new Response().code(Response.Code.DRAWING_RECEIVED).data("chunk", history));
+        this.broadcast(
+                new Response()
+                        .code(Response.Code.DRAWING_RECEIVED)
+                        .data("chunk", history)
+                        .data("peoples", this.clients.size())
+        );
     }
 
     protected boolean disconnect(ClientHandler client) {
@@ -58,5 +70,9 @@ public class Party {
 
     public List<CanvasHistory> history() {
         return history;
+    }
+
+    public List<ClientHandler> peoples() {
+        return this.clients;
     }
 }
