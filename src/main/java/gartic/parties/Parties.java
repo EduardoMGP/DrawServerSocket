@@ -86,26 +86,29 @@ public class Parties {
 
                 if (party.connect(client)) {
                     int size = party.history().size();
-                    if (size > 100) {
-                        size = size / 100;
-                        for (int i = 0; i < size; i++) {
-                            client.send(
-                                    new Response()
-                                            .code(Code.PARTY_CONNECTED)
-                                            .data("chunk", party.history().subList(i * 100, (i + 1) * 100))
-                                            .data("peoples", party.peoples().size())
-                            );
-                        }
-                    } else {
+                    int chunkSize = Math.max((int) Math.ceil(size / 100.0), 1);
+
+                    client.send(new Response()
+                            .code(Code.PARTY_CONNECTED)
+                            .data("peoples", party.peoples().size())
+                    );
+
+                    for (int i = 0; i < size; i += chunkSize) {
+                        int end = Math.min(i + chunkSize, size);
                         client.send(
                                 new Response()
-                                        .code(Code.PARTY_CONNECTED)
-                                        .data("chunk", party.history())
+                                        .code(Code.DRAWING_RECEIVED)
+                                        .data("chunk", party.history().subList(i, end))
                                         .data("peoples", party.peoples().size())
                         );
                     }
-                    party.broadcast(new Response().code(Code.PARTY_CLIENT_JOINED)
-                            .data("peoples", party.peoples().size()), true);
+
+                    party.broadcast(
+                            new Response().code(Code.PARTY_CLIENT_JOINED)
+                                    .data("peoples", party.peoples().size()),
+                            true
+                    );
+
                     return;
                 }
 
@@ -167,7 +170,7 @@ public class Parties {
     public static void list(ClientHandler clientHandler) {
         StringBuilder json = new StringBuilder("[");
         for (Party party : parties.values())
-            if(json.length() > 1)
+            if (json.length() > 1)
                 json.append(",{\"name\":\"").append(party.name()).append("\",\"peoples\":").append(party.peoples().size()).append("}");
             else
                 json.append("{\"name\":\"").append(party.name()).append("\",\"peoples\":").append(party.peoples().size()).append("}");

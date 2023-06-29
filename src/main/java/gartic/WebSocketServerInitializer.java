@@ -11,14 +11,21 @@ import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory;
+import io.netty.handler.ssl.SslHandler;
+
 
 public class WebSocketServerInitializer extends ChannelInitializer<SocketChannel> {
 
     @Override
     protected void initChannel(SocketChannel ch) {
         ChannelPipeline pipeline = ch.pipeline();
-        pipeline.addLast("httpServerCodec", new HttpServerCodec());
 
+        // Adiciona o handler SSL ao pipeline
+
+        // Adiciona os handlers do WebSocket ao pipeline
+        if (ServerGartic.sslContext != null)
+            pipeline.addLast(new SslHandler(ServerGartic.sslContext.newEngine(ch.alloc())));
+        pipeline.addLast("httpServerCodec", new HttpServerCodec());
         pipeline.addLast("httpHandler", new SimpleChannelInboundHandler<>() {
             @Override
             protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
